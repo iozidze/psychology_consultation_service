@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters": {
+    "json": {
+      "()": "app.logging_config.CustomJsonFormatter",
+      "format": "%(timestamp)s %(level)s %(service)s %(name)s %(message)s %(request_id)s"
+    }
+  },
+  "handlers": {
+    "console": {
+      "class": "logging.StreamHandler",
+      "formatter": "json",
+      "stream": "ext://sys.stdout"
+    }
+  },
+  "root": {
+    "level": "INFO",
+    "handlers": ["console"]
+  },
+  "loggers": {
+    "uvicorn.access": {
+      "level": "WARNING",
+      "handlers": ["console"],
+      "propagate": false
+    }
+  }
+}
