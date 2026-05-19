@@ -16,7 +16,7 @@
 # COPY requirements.txt .
 # RUN pip install -r requirements.txt
 
-# COPY . .
+# COPY . . 
 
 # # Переменные по умолчанию (можно переопределить при запуске)
 # ENV DATABASE_URL=postgresql://postgres:postgres@db:5432/psychology
