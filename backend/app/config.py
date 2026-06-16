@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     port: int = 8000
     cors_origins: str = "http://localhost:5173"
 
-    database_url: str = "postgresql://postgres1:postgres@db:5432/psychology"
+    database_url: str = "postgresql://postgres1:1d7diUVaHy5F5wW2iyrE4tB5DqUp78UH@dpg-d8oroa0k1i2s73ekuidg-a/psychology_qxo6"
 
     jwt_secret: str = "development-secret-change-me"
     access_token_expire_minutes: int = 1440
