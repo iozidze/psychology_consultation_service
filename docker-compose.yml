@@ -2,7 +2,7 @@ services:
   backend:
     build: ./backend
     environment:
-      DATABASE_URL: postgresql://postgres:postgres@db:5432/psychology
+      DATABASE_URL: postgresql://postgres1:postgres@db:5432/psychology
       JWT_SECRET: psychology-course-dev-secret
       CORS_ORIGINS: http://localhost:5173
     ports:
@@ -25,7 +25,7 @@ services:
     image: postgres:16
     environment:
       POSTGRES_DB: psychology
-      POSTGRES_USER: postgres
+      POSTGRES_USER: postgres1
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
