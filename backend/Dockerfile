@@ -36,7 +36,7 @@ RUN pip install -r requirements.txt
 
 COPY . .
 
-ENV DATABASE_URL=postgresql://postgres:postgres@db:5432/psychology
+ENV DATABASE_URL=postgresql://postgres1:postgres@db:5432/psychology
 ENV JWT_SECRET=development-secret-change-me
 ENV CORS_ORIGINS=http://localhost:5173
 ENV ACCESS_TOKEN_EXPIRE_MINUTES=1440
