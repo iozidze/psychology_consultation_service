@@ -1,15 +1,15 @@
-# app/main.py (обновлённые части)
+# app/main.py
 import asyncio
 import logging
 import signal
 from contextlib import asynccontextmanager
+from datetime import datetime
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.pool import NullPool
 
 from app.config import settings
 from app.database import Base, SessionLocal, engine, get_db
@@ -96,7 +96,7 @@ async def cleanup_resources():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Lifespan контекст для startup/shutdown логики [[31]][[32]]."""
+    """Lifespan контекст для startup/shutdown логики."""
     # === STARTUP ===
     logger.info("Application starting", extra={"port": settings.port})
     initialize_database()
@@ -129,11 +129,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(title="Psychology Consultation Service", lifespan=lifespan)
 
-# Middleware: RequestID ДО ShutdownMiddleware
-app.add_middleware(RequestIDMiddleware)
-app.add_middleware(ShutdownMiddleware)  # 🔒 Блокировка новых запросов при shutdown
+# ⚠️ ВАЖНО: в FastAPI middleware выполняется в ОБРАТНОМ порядке добавления!
+# Последний add_middleware вызывается ПЕРВЫМ.
 
-# CORS
+# 1️⃣ ShutdownMiddleware — добавляем ПЕРВЫМ, выполнится ПОСЛЕДНИМ
+app.add_middleware(ShutdownMiddleware)
+
+# 2️⃣ RequestIDMiddleware — добавляем ВТОРЫМ, выполнится ВТОРЫМ
+app.add_middleware(RequestIDMiddleware)
+
+# 3️⃣ CORSMiddleware — добавляем ПОСЛЕДНИМ, выполнится ПЕРВЫМ (обрабатывает OPTIONS preflight)
 allowed_origins = settings.cors_origins.split(",")
 app.add_middleware(
     CORSMiddleware,
