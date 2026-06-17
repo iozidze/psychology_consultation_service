@@ -3,7 +3,7 @@ import asyncio
 import logging
 import signal
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime  # ✅ ДОБАВЛЕНО
 from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
@@ -86,11 +86,6 @@ async def cleanup_resources():
         engine.dispose()
         logger.info("Database connections closed")
     
-    # Здесь можно добавить очистку других ресурсов:
-    # - Redis подключения
-    # - Фоновые задачи
-    # - WebSocket соединения
-    
     logger.info("Cleanup completed")
 
 
@@ -107,7 +102,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     def handle_shutdown_signal(signum, frame):
         logger.info(f"Received signal {signum}, initiating graceful shutdown")
         set_shutting_down(True)
-        # Uvicorn сам обработает SIGTERM, мы только ставим флаг
     
     signal.signal(signal.SIGTERM, handle_shutdown_signal)
     signal.signal(signal.SIGINT, handle_shutdown_signal)
@@ -118,7 +112,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     set_shutting_down(True)
     logger.info("Application shutting down, waiting for in-flight requests...")
     
-    # Даём время завершиться текущим запросам (настраивается в stop_grace_period)
+    # Даём время завершиться текущим запросам
     await asyncio.sleep(2)
     
     # Очищаем ресурсы
@@ -129,16 +123,16 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(title="Psychology Consultation Service", lifespan=lifespan)
 
-# ⚠️ ВАЖНО: в FastAPI middleware выполняется в ОБРАТНОМ порядке добавления!
-# Последний add_middleware вызывается ПЕРВЫМ.
+# ⚠️ ВАЖНО: middleware выполняется в ОБРАТНОМ порядке добавления!
+# Последнее add_middleware выполняется ПЕРВЫМ.
 
-# 1️⃣ ShutdownMiddleware — добавляем ПЕРВЫМ, выполнится ПОСЛЕДНИМ
+# 1️⃣ ShutdownMiddleware — добавляем ПЕРВЫМ (выполнится ПОСЛЕДНИМ)
 app.add_middleware(ShutdownMiddleware)
 
-# 2️⃣ RequestIDMiddleware — добавляем ВТОРЫМ, выполнится ВТОРЫМ
+# 2️⃣ RequestIDMiddleware — добавляем ВТОРЫМ (выполнится ВТОРЫМ)
 app.add_middleware(RequestIDMiddleware)
 
-# 3️⃣ CORSMiddleware — добавляем ПОСЛЕДНИМ, выполнится ПЕРВЫМ (обрабатывает OPTIONS preflight)
+# 3️⃣ CORSMiddleware — добавляем ПОСЛЕДНИМ (выполнится ПЕРВЫМ для обработки OPTIONS)
 allowed_origins = settings.cors_origins.split(",")
 app.add_middleware(
     CORSMiddleware,
