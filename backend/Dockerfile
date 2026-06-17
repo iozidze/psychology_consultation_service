@@ -38,7 +38,7 @@ COPY . .
 
 ENV DATABASE_URL=postgresql://postgres1:1d7diUVaHy5F5wW2iyrE4tB5DqUp78UH@dpg-d8oroa0k1i2s73ekuidg-a/psychology_qxo6
 ENV JWT_SECRET=development-secret-change-me
-ENV CORS_ORIGINS=http://localhost:5173
+ENV CORS_ORIGINS=http://localhost:5173,https://psychology-consultation-service.onrender.com
 ENV ACCESS_TOKEN_EXPIRE_MINUTES=1440
 ENV LOG_LEVEL=INFO
 
