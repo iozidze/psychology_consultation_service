@@ -3,16 +3,16 @@ import asyncio
 import logging
 import signal
 from contextlib import asynccontextmanager
-from datetime import datetime  # ✅ ДОБАВЛЕНО
+from datetime import datetime
 from typing import AsyncGenerator
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
 from app.config import settings
-from app.database import Base, SessionLocal, engine, get_db
+from app.database import Base, SessionLocal, engine
 from app.routes import auth, users, slots, notes
 from app.seed import seed_database
 from app.logging_config import setup_logging, get_logger
@@ -36,7 +36,6 @@ def is_shutting_down() -> bool:
     return _is_shutting_down
 
 
-# 🚫 Middleware для отказа в новых запросах при shutdown
 class ShutdownMiddleware:
     def __init__(self, app):
         self.app = app
@@ -75,64 +74,50 @@ def initialize_database() -> None:
 
 
 async def cleanup_resources():
-    """Очистка ресурсов при завершении работы."""
     logger.info("Starting graceful shutdown cleanup...")
-    
-    # Закрываем все активные сессии БД
     SessionLocal.close_all()
-    
-    # Закрываем пул соединений
     if engine:
         engine.dispose()
         logger.info("Database connections closed")
-    
     logger.info("Cleanup completed")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    """Lifespan контекст для startup/shutdown логики."""
-    # === STARTUP ===
     logger.info("Application starting", extra={"port": settings.port})
     initialize_database()
-    
-    # Регистрация обработчиков сигналов
+
     loop = asyncio.get_event_loop()
-    
+
     def handle_shutdown_signal(signum, frame):
         logger.info(f"Received signal {signum}, initiating graceful shutdown")
         set_shutting_down(True)
-    
+
     signal.signal(signal.SIGTERM, handle_shutdown_signal)
     signal.signal(signal.SIGINT, handle_shutdown_signal)
-    
-    yield  # ⏸️ Приложение работает
-    
-    # === SHUTDOWN ===
+
+    yield
+
     set_shutting_down(True)
     logger.info("Application shutting down, waiting for in-flight requests...")
-    
-    # Даём время завершиться текущим запросам
     await asyncio.sleep(2)
-    
-    # Очищаем ресурсы
     await cleanup_resources()
-    
     logger.info("Application shutdown complete")
 
 
 app = FastAPI(title="Psychology Consultation Service", lifespan=lifespan)
 
 # ⚠️ ВАЖНО: middleware выполняется в ОБРАТНОМ порядке добавления!
-# Последнее add_middleware выполняется ПЕРВЫМ.
+# Последний add_middleware вызывается ПЕРВЫМ.
 
-# 1️⃣ ShutdownMiddleware — добавляем ПЕРВЫМ (выполнится ПОСЛЕДНИМ)
+# 1️⃣ ShutdownMiddleware — добавляем ПЕРВЫМ → выполнится ПОСЛЕДНИМ
 app.add_middleware(ShutdownMiddleware)
 
-# 2️⃣ RequestIDMiddleware — добавляем ВТОРЫМ (выполнится ВТОРЫМ)
+# 2️⃣ RequestIDMiddleware — добавляем ВТОРЫМ → выполнится ВТОРЫМ
 app.add_middleware(RequestIDMiddleware)
 
-# 3️⃣ CORSMiddleware — добавляем ПОСЛЕДНИМ (выполнится ПЕРВЫМ для обработки OPTIONS)
+# 3️⃣ CORSMiddleware — добавляем ПОСЛЕДНИМ → выполнится ПЕРВЫМ
+#     Именно он правильно обрабатывает OPTIONS preflight
 allowed_origins = settings.cors_origins.split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -161,7 +146,6 @@ def root():
 
 @app.get("/health")
 def health_check():
-    """Эндпоинт для Kubernetes/оркестратора."""
     if is_shutting_down():
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
